@@ -1,588 +1,254 @@
-<!DOCTYPE html>
-<html lang="zh-CN">
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html>
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1" />
-<title>收益追踪表</title>
-<style>
-  :root {
-    --bg: #0c0f17;
-    --panel: #1a1f2e;
-    --line: #2f384f;
-    --text-main: #fff;
-    --text-dim: #8b94ad;
-    --accent-safe: #4ade80;
-    --accent-max: #38bdf8;
-    --accent-plate: #22c55e;
-    --accent-plate2:#0ea5e9;
-    --radius: 16px;
-    --pad: 16px;
-    --font: -apple-system,BlinkMacSystemFont,"SF Pro Display","Segoe UI",
-            Roboto,"Helvetica Neue",Helvetica,Arial,"Microsoft YaHei",sans-serif;
-  }
-
-  body {
-    background:
-      radial-gradient(circle at 20% 20%,rgba(56,189,248,.08) 0%,transparent 60%),
-      radial-gradient(circle at 80% 30%,rgba(16,185,129,.08) 0%,transparent 60%),
-      var(--bg);
-    background-size: cover;
-    color: var(--text-main);
-    font-family: var(--font);
-    padding: 24px 16px 80px;
-    line-height: 1.5;
-    -webkit-font-smoothing: antialiased;
-  }
-
-  .header-wrap{
-    max-width: 900px;
-    margin: 0 auto 20px;
-    text-align:left;
-  }
-  h1 {
-    font-size: 1.2rem;
-    font-weight: 600;
-    margin: 0;
-    color: #fff;
-    display:flex;
-    flex-wrap:wrap;
-    align-items:center;
-    gap:8px;
-  }
-
-  .layout {
-    display: grid;
-    gap: 16px;
-    max-width: 900px;
-    margin: 0 auto;
-  }
-  @media(min-width:768px){
-    .layout {
-      grid-template-columns: 1fr 1fr;
-      align-items: start;
-    }
-  }
-
-  .card {
-    background: var(--panel);
-    border-radius: var(--radius);
-    box-shadow: 0 30px 80px rgba(0,0,0,.8);
-    border: 1px solid var(--line);
-    padding: var(--pad);
-    position:relative;
-    overflow:hidden;
-  }
-  .card:before{
-    content:"";
-    position:absolute;
-    inset:-40px -40px auto auto;
-    width:140px;
-    height:140px;
-    background:radial-gradient(circle,rgba(56,189,248,.18)0%,rgba(0,0,0,0)70%);
-    filter:blur(20px);
-    opacity:.4;
-    pointer-events:none;
-  }
-  .card h2 {
-    font-size: .9rem;
-    font-weight: 600;
-    color: #fff;
-    margin: 0 0 12px;
-    display: flex;
-    align-items: baseline;
-    justify-content: space-between;
-  }
-  .card h2 span {
-    font-size:.7rem;
-    color: var(--text-dim);
-    font-weight:400;
-  }
-
-  .total-block {
-    background: rgba(16,185,129,.08);
-    border: 1px solid rgba(16,185,129,.4);
-    border-radius: var(--radius);
-    padding: 14px 16px;
-    margin-bottom: 20px;
-  }
-  .total-title{
-    font-size:.7rem;
-    color:var(--text-dim);
-    line-height:1.3;
-    margin-bottom:6px;
-    display:flex;
-    justify-content:space-between;
-    flex-wrap:wrap;
-    gap:4px;
-  }
-  .total-title .badge-safe{
-    color:#000;
-    background:linear-gradient(90deg,#4ade80,#22c55e);
-    font-weight:600;
-    font-size:.65rem;
-    line-height:1;
-    border-radius:999px;
-    padding:3px 6px;
-  }
-  .total-val{
-    font-size:1.2rem;
-    font-weight:600;
-    color:var(--accent-safe);
-    line-height:1.2;
-  }
-  .total-hint{
-    font-size:.7rem;
-    color:var(--text-dim);
-    line-height:1.4;
-    min-height:1em;
-  }
-
-  /* 进度条区域（杠铃视觉） */
-  .barbell-block{
-    margin-bottom:20px;
-  }
-  .barbell-head{
-    display:flex;
-    justify-content:space-between;
-    flex-wrap:wrap;
-    line-height:1.3;
-    font-size:.8rem;
-    margin-bottom:10px;
-    color:#fff;
-  }
-  .barbell-head .label{
-    font-weight:600;
-    display:flex;
-    align-items:center;
-    gap:6px;
-    flex-wrap:wrap;
-  }
-
-  .barbell-track{
-    position:relative;
-    width:100%;
-    height:48px;
-    background:#0c0f17;
-    border-radius:12px;
-    border:1px solid var(--line);
-    box-shadow: inset 0 0 10px rgba(0,0,0,.8),0 10px 30px rgba(0,0,0,.6);
-    overflow:hidden;
-    display:flex;
-    align-items:center;
-    justify-content:center;
-  }
-
-  /* 杠铃的杆 */
-  .barbell-rod{
-    position:absolute;
-    left:10%;
-    right:10%;
-    height:8px;
-    background:linear-gradient(90deg,#555,#999,#555);
-    border-radius:4px;
-    box-shadow:0 0 6px rgba(255,255,255,.2);
-  }
-
-  /*
-    每个目标的填充块（类似“杠片”）
-    - 我们让它从 left:10% 开始
-    - 宽度由JS动态设置百分比
-    - 这样就是标准的从左到右推进
-  */
-  .barbell-fill{
-    position:absolute;
-    left:10%;
-    height:36px;
-    width:0%; /* JS里会更新 */
-    background:linear-gradient(90deg,
-      var(--accent-plate) 0%,
-      #16a34a 30%,
-      #065f46 60%,
-      #022c22 100%
-    );
-    border:2px solid rgba(0,0,0,.6);
-    border-radius:6px;
-    box-shadow:
-      0 0 10px rgba(16,185,129,.6),
-      0 10px 20px rgba(0,0,0,.8),
-      inset 0 0 10px rgba(0,0,0,.8);
-    transition:width .4s ease;
-    display:flex;
-    align-items:center;
-    justify-content:flex-end;
-    padding-right:8px;
-    font-size:.7rem;
-    font-weight:600;
-    color:#fff;
-    white-space:nowrap;
-    text-shadow:0 0 4px rgba(0,0,0,.8);
-    box-sizing:border-box;
-  }
-
-  .barbell-fill.max {
-    background:linear-gradient(90deg,
-      var(--accent-plate2) 0%,
-      #0369a1 40%,
-      #082f49 100%
-    );
-    box-shadow:
-      0 0 10px rgba(56,189,248,.6),
-      0 10px 20px rgba(0,0,0,.8),
-      inset 0 0 10px rgba(0,0,0,.8);
-  }
-
-  .barbell-foot{
-    margin-top:6px;
-    font-size:.7rem;
-    color:var(--text-dim);
-    display:flex;
-    justify-content:space-between;
-    flex-wrap:wrap;
-    line-height:1.4;
-  }
-  .barbell-foot .num{
-    color:#fff;
-    font-weight:600;
-  }
-
-  /* 表格 */
-  table {
-    width: 100%;
-    border-collapse: collapse;
-    font-size: .75rem;
-    color: #fff;
-  }
-  thead th {
-    background: #2a324a;
-    color: #fff;
-    font-weight: 600;
-    text-align: left;
-    border: 1px solid var(--line);
-    padding: 8px;
-    white-space: nowrap;
-  }
-  tbody td {
-    border: 1px solid var(--line);
-    padding: 6px 8px;
-    vertical-align: middle;
-  }
-  tbody tr.section-header td {
-    background: #2f384f;
-    color: #fff;
-    font-weight: 600;
-    font-size: .7rem;
-    letter-spacing: .03em;
-    text-transform: uppercase;
-  }
-
-  input.txt {
-    width: 100%;
-    background: transparent;
-    color: #fff;
-    border: none;
-    font-size: .75rem;
-    outline: none;
-  }
-  input.amt {
-    width: 100%;
-    background: rgba(15,23,42,.6);
-    color: #fff;
-    border: 1px solid var(--line);
-    border-radius: 6px;
-    font-size: .75rem;
-    padding: 4px 6px;
-    outline: none;
-    text-align: right;
-  }
-  input.amt:focus {
-    border-color: var(--accent-max);
-    box-shadow: 0 0 0 2px rgba(56,189,248,.3);
-  }
-
-  .add-row-wrap {
-    text-align: right;
-    margin-top: 8px;
-  }
-  button.add-row {
-    background: rgba(56,189,248,.15);
-    border: 1px solid rgba(56,189,248,.6);
-    color: #fff;
-    font-size: .7rem;
-    padding: 6px 10px;
-    border-radius: 8px;
-  }
-  button.add-row:active {
-    transform: scale(.98);
-  }
-
-  .note {
-    font-size: .7rem;
-    color: var(--text-dim);
-    line-height: 1.4;
-    margin-top: 12px;
-  }
-
-  .quote {
-    font-size: .7rem;
-    color: var(--text-dim);
-    line-height:1.4;
-    margin-top: 12px;
-    text-align: right;
-    font-style: italic;
-  }
-
-</style>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+  <meta http-equiv="Content-Style-Type" content="text/css">
+  <title></title>
+  <meta name="Generator" content="Cocoa HTML Writer">
+  <meta name="CocoaVersion" content="2575.7">
+  <style type="text/css">
+    body {background-color: #0b0d12}
+    p.p1 {margin: 0.0px 0.0px 0.0px 0.0px; font: 14.4px 'PingFang SC Semibold'; color: #ffffff; -webkit-text-stroke: #ffffff}
+    p.p2 {margin: 0.0px 0.0px 0.0px 0.0px; font: 10.8px 'PingFang SC Semibold'; color: #ffffff; -webkit-text-stroke: #ffffff}
+    p.p3 {margin: 0.0px 0.0px 0.0px 0.0px; font: 8.4px 'PingFang SC'; color: #78819d; -webkit-text-stroke: #78819d}
+    p.p4 {margin: 0.0px 0.0px 0.0px 0.0px; font: 7.8px 'PingFang SC Semibold'; color: #78819d; -webkit-text-stroke: #000000}
+    p.p5 {margin: 0.0px 0.0px 0.0px 0.0px; font: 14.4px '.SF NS'; color: #41db6d; -webkit-text-stroke: #41db6d}
+    p.p6 {margin: 0.0px 0.0px 0.0px 0.0px; font: 8.4px 'Helvetica Neue'; color: #78819d; -webkit-text-stroke: #78819d; min-height: 10.0px}
+    p.p7 {margin: 0.0px 0.0px 0.0px 0.0px; font: 9.6px '.SF NS'; color: #ffffff; -webkit-text-stroke: #ffffff}
+    p.p8 {margin: 0.0px 0.0px 0.0px 0.0px; font: 9.0px '.SF NS'; color: #41db6d; -webkit-text-stroke: #41db6d}
+    p.p9 {margin: 0.0px 0.0px 0.0px 0.0px; font: 12.0px 'Helvetica Neue'; color: #ffffff; -webkit-text-stroke: #ffffff; min-height: 15.0px}
+    p.p10 {margin: 0.0px 0.0px 0.0px 0.0px; font: 8.4px '.SF NS'; color: #ffffff; -webkit-text-stroke: #ffffff}
+    p.p11 {margin: 0.0px 0.0px 0.0px 0.0px; font: 9.0px '.SF NS'; color: #31aef6; -webkit-text-stroke: #31aef6}
+    p.p12 {margin: 0.0px 0.0px 0.0px 0.0px; font: 9.0px 'PingFang SC Semibold'; color: #ffffff; -webkit-text-stroke: #ffffff}
+    p.p13 {margin: 0.0px 0.0px 0.0px 0.0px; font: 9.0px '.SF NS'; color: #ffffff; -webkit-text-stroke: #ffffff}
+    p.p14 {margin: 0.0px 0.0px 0.0px 0.0px; text-align: right; font: 9.0px 'PingFang SC'; color: #ffffff; -webkit-text-stroke: #ffffff}
+    p.p15 {margin: 0.0px 0.0px 0.0px 0.0px; font: 8.4px 'PingFang SC Semibold'; color: #ffffff; -webkit-text-stroke: #ffffff}
+    p.p16 {margin: 0.0px 0.0px 0.0px 0.0px; font: 9.0px 'Helvetica Neue'; color: #ffffff; -webkit-text-stroke: #ffffff}
+    p.p17 {margin: 0.0px 0.0px 0.0px 0.0px; font: 9.0px 'Helvetica Neue'; color: #ffffff; -webkit-text-stroke: #ffffff; min-height: 11.0px}
+    p.p18 {margin: 0.0px 0.0px 0.0px 0.0px; font: 9.0px 'PingFang SC'; color: #ffffff; -webkit-text-stroke: #ffffff}
+    p.p19 {margin: 0.0px 0.0px 0.0px 0.0px; text-align: right; font: 8.4px 'PingFang SC'; color: #ffffff; -webkit-text-stroke: #ffffff}
+    p.p20 {margin: 0.0px 0.0px 0.0px 0.0px; text-align: right; font: 8.4px 'PingFang SC'; color: #78819d; -webkit-text-stroke: #78819d}
+    span.s1 {font: 14.4px 'PingFang SC'; font-kerning: none}
+    span.s2 {font: 10.8px 'PingFang SC'; font-kerning: none; background-color: #141722}
+    span.s3 {font-kerning: none; background-color: #141722}
+    span.s4 {font-kerning: none; background-color: rgba(27, 174, 110, 0.078)}
+    span.s5 {font: 7.8px 'PingFang SC'; font-kerning: none; background-color: rgba(27, 174, 110, 0.078)}
+    span.s6 {font-kerning: none}
+    span.s7 {font: 9.6px 'PingFang SC'; font-kerning: none; background-color: #141722}
+    span.s8 {font: 9.0px 'PingFang SC'; font-kerning: none; color: #78819d; background-color: #141722; -webkit-text-stroke: 0px #78819d}
+    span.s9 {font-kerning: none; background-color: #0b0d12; text-shadow: 0.0px -0.0px 4.0px rgba(254, 254, 254, 0.0039)}
+    span.s10 {font: 8.4px 'PingFang SC'; font-kerning: none; color: #78819d; background-color: #141722; -webkit-text-stroke: 0px #78819d}
+    span.s11 {font: 8.4px 'Helvetica Neue'; font-kerning: none; color: #78819d; background-color: #141722; -webkit-text-stroke: 0px #78819d}
+    span.s12 {font: 9.0px 'PingFang SC'; font-kerning: none; background-color: #141722}
+    span.s13 {font: 9.0px '.SF NS'; font-kerning: none; background-color: #141722}
+    span.s14 {font: 8.4px 'PingFang SC'; font-kerning: none; background-color: #141722}
+    span.s15 {font: 9.0px 'PingFang SC'; font-kerning: none}
+    span.s16 {font-kerning: none; background-color: rgba(13, 18, 31, 0.6)}
+    span.s17 {font: 9.0px 'Helvetica Neue'; font-kerning: none}
+    span.s18 {font-kerning: none; background-color: rgba(49, 174, 246, 0.15)}
+    span.s19 {font: 8.4px 'Helvetica Neue'; font-kerning: none; background-color: rgba(49, 174, 246, 0.15)}
+    span.s20 {font: 8.4px 'Helvetica Neue'; font-kerning: none; background-color: #141722}
+    table.t1 {border-collapse: collapse}
+    td.td1 {width: 145.8px; background-color: #202539; border-style: solid; border-width: 1.0px 1.0px 1.0px 1.0px; border-color: #232a3e #232a3e #232a3e #232a3e; padding: 8.0px 8.0px 8.0px 8.0px}
+    td.td2 {width: 64.4px; background-color: #202539; border-style: solid; border-width: 1.0px 1.0px 1.0px 1.0px; border-color: #232a3e #232a3e #232a3e #232a3e; padding: 8.0px 8.0px 8.0px 8.0px}
+    td.td3 {width: 390.0px; background-color: #232a3e; border-style: solid; border-width: 1.0px 1.0px 1.0px 1.0px; border-color: #232a3e #232a3e #232a3e #232a3e; padding: 6.0px 8.0px 6.0px 8.0px}
+    td.td4 {width: 145.8px; border-style: solid; border-width: 1.0px 1.0px 1.0px 1.0px; border-color: #232a3e #232a3e #232a3e #232a3e; padding: 6.0px 8.0px 6.0px 8.0px}
+    td.td5 {width: 64.4px; border-style: solid; border-width: 1.0px 1.0px 1.0px 1.0px; border-color: #232a3e #232a3e #232a3e #232a3e; padding: 6.0px 8.0px 6.0px 8.0px}
+  </style>
 </head>
 <body>
-
-<div class="header-wrap">
-  <h1>收益追踪表</h1>
-</div>
-
-<div class="layout">
-
-  <!-- 左侧：汇总 & 进度 -->
-  <section class="card" id="summaryCard">
-    <h2>
-      目前收益
-      <span>自动汇总</span>
-    </h2>
-
-    <div class="total-block">
-      <div class="total-title">
-        <div>当前累计已落袋利润</div>
-        <div class="badge-safe">已实现</div>
-      </div>
-      <div class="total-val" id="totalProfitDisplay">¥ 0.00</div>
-      <div class="total-hint"></div>
-    </div>
-
-    <!-- 30,000 目标 -->
-    <div class="barbell-block">
-      <div class="barbell-head">
-        <div class="label">目标 30,000 元</div>
-        <div class="label" style="font-size:.75rem;color:var(--text-dim);">
-          进度：<span id="pct30" style="color:var(--accent-safe);font-weight:600;">0%</span>
-        </div>
-      </div>
-
-      <div class="barbell-track">
-        <div class="barbell-rod"></div>
-        <!-- 这里的 width 会在 JS 里用真实进度百分比计算 -->
-        <div class="barbell-fill" id="bar30">
-          <span style="font-size:.7rem;">
-            <span class="num" id="done30">0</span> / 30,000
-          </span>
-        </div>
-      </div>
-
-      <div class="barbell-foot">
-        <div>剩余 <span class="num" id="left30">0</span> 元</div>
-        <div></div>
-      </div>
-    </div>
-
-    <!-- 35,000 目标 -->
-    <div class="barbell-block">
-      <div class="barbell-head">
-        <div class="label">目标 35,000 元</div>
-        <div class="label" style="font-size:.75rem;color:var(--text-dim);">
-          进度：<span id="pct35" style="color:var(--accent-max);font-weight:600;">0%</span>
-        </div>
-      </div>
-
-      <div class="barbell-track">
-        <div class="barbell-rod"></div>
-        <div class="barbell-fill max" id="bar35">
-          <span style="font-size:.7rem;">
-            <span class="num" id="done35">0</span> / 35,000
-          </span>
-        </div>
-      </div>
-
-      <div class="barbell-foot">
-        <div>剩余 <span class="num" id="left35">0</span> 元</div>
-        <div></div>
-      </div>
-    </div>
-
-  </section>
-
-  <!-- 右侧：成交记录 -->
-  <section class="card">
-    <h2>
-      成交记录
-      <span>卖出后填写</span>
-    </h2>
-
-    <table>
-      <thead>
-        <tr>
-          <!-- 第一列加宽，避免文本挤在一行里显示不全 -->
-          <th style="width:40%;">标的</th>
-          <th style="width:20%;">成交日</th>
-          <th style="width:20%;">卖价(¥)</th>
-          <th style="width:20%;text-align:right;">利润(元)</th>
-        </tr>
-      </thead>
-
-      <tbody id="profit-rows">
-
-        <tr class="section-header"><td colspan="4">已完成</td></tr>
-
-        <tr>
-          <td><input class="txt" value="纳指ETF" /></td>
-          <td><input class="txt" value="" /></td>
-          <td><input class="txt" value="" /></td>
-          <td><input class="amt" value="1847.30" oninput="recalc()" /></td>
-        </tr>
-
-        <tr>
-          <td><input class="txt" value="华银电力" /></td>
-          <td><input class="txt" value="" /></td>
-          <td><input class="txt" value="" /></td>
-          <td><input class="amt" value="1225.61" oninput="recalc()" /></td>
-        </tr>
-
-        <tr>
-          <td><input class="txt" value="北方稀土" /></td>
-          <td><input class="txt" value="" /></td>
-          <td><input class="txt" value="" /></td>
-          <td><input class="amt" value="186.15" oninput="recalc()" /></td>
-        </tr>
-
-        <tr>
-          <td><input class="txt" value="农业银行" /></td>
-          <td><input class="txt" value="" /></td>
-          <td><input class="txt" value="" /></td>
-          <td><input class="amt" value="359.24" oninput="recalc()" /></td>
-        </tr>
-
-        <tr>
-          <td><input class="txt" value="人工智能AI50ETF" /></td>
-          <td><input class="txt" value="" /></td>
-          <td><input class="txt" value="" /></td>
-          <td><input class="amt" value="444.00" oninput="recalc()" /></td>
-        </tr>
-
-        <tr>
-          <td><input class="txt" value="创业板ETF" /></td>
-          <td><input class="txt" value="" /></td>
-          <td><input class="txt" value="" /></td>
-          <td><input class="amt" value="1114.52" oninput="recalc()" /></td>
-        </tr>
-
-        <tr class="section-header"><td colspan="4">本轮</td></tr>
-
-        <tr>
-          <td><input class="txt" value="AI主题ETF 第一档卖出" /></td>
-          <td><input class="txt" value="2025-10-27" /></td>
-          <td><input class="txt" value="1.995" /></td>
-          <td><input class="amt" value="900.00" oninput="recalc()" /></td>
-        </tr>
-
-        <tr>
-          <td><input class="txt" value="电子ETF 第一档卖出" /></td>
-          <td><input class="txt" value="2025-10-27" /></td>
-          <td><input class="txt" value="1.740" /></td>
-          <td><input class="amt" value="1131.00" oninput="recalc()" /></td>
-        </tr>
-
-        <tr>
-          <td><input class="txt" value="沪深300ETF 第一档卖出" /></td>
-          <td><input class="txt" value="2025-10-27" /></td>
-          <td><input class="txt" value="4.830" /></td>
-          <td><input class="amt" value="708.90" oninput="recalc()" /></td>
-        </tr>
-
-      </tbody>
-    </table>
-
-    <div class="add-row-wrap">
-      <button class="add-row" onclick="addRow()">＋ 新增一笔</button>
-    </div>
-
-    <div class="note">
-      新增一笔后，填成交日、卖价、利润。
-    </div>
-
-    <div class="quote">
-      万七的佣金可以用优惠券吗？<br/>——某知名教练
-    </div>
-  </section>
-</div>
-
-<script>
-function formatMoney(n){
-  if(isNaN(n)) n = 0;
-  return n.toLocaleString('zh-CN',{
-    minimumFractionDigits:2,
-    maximumFractionDigits:2
-  });
-}
-
-function getTotal(){
-  const rows = document.querySelectorAll('#profit-rows tr');
-  let sum = 0;
-  rows.forEach(r=>{
-    const amtInput = r.querySelector('input.amt');
-    if(!amtInput) return;
-    const v = parseFloat(amtInput.value.replace(/,/g,''));
-    if(!isNaN(v)) sum += v;
-  });
-  return sum;
-}
-
-function recalc(){
-  const total = getTotal();
-
-  const goal30 = 30000;
-  const goal35 = 35000;
-
-  // 更新总利润展示
-  document.getElementById('totalProfitDisplay').textContent = '¥ ' + formatMoney(total);
-
-  // 目标30k
-  const pct30 = Math.min(total/goal30*100,100); // 0~100
-  document.getElementById('pct30').textContent = pct30.toFixed(1) + '%';
-  document.getElementById('done30').textContent = formatMoney(total);
-  const left30 = Math.max(goal30-total,0);
-  document.getElementById('left30').textContent = formatMoney(left30);
-
-  // 把进度按真实百分比映射到轨道宽度
-  // 轨道内我们视觉上只用中间 80%（左右各留10%），
-  // 杠片div是left:10%，所以我们只需要把宽度设成 百分比 * 0.8
-  const bar30 = document.getElementById('bar30');
-  const fillPct30 = Math.min(pct30,100) * 0.8; // 0~80
-  bar30.style.width = fillPct30 + "%";
-
-  // 目标35k
-  const pct35 = Math.min(total/goal35*100,100);
-  document.getElementById('pct35').textContent = pct35.toFixed(1) + '%';
-  document.getElementById('done35').textContent = formatMoney(total);
-  const left35 = Math.max(goal35-total,0);
-  document.getElementById('left35').textContent = formatMoney(left35);
-
-  const bar35 = document.getElementById('bar35');
-  const fillPct35 = Math.min(pct35,100) * 0.8;
-  bar35.style.width = fillPct35 + "%";
-}
-
-function addRow(){
-  const tbody = document.getElementById('profit-rows');
-  const tr = document.createElement('tr');
-  tr.innerHTML = `
-    <td><input class="txt" placeholder="标的" /></td>
-    <td><input class="txt" placeholder="YYYY-MM-DD" /></td>
-    <td><input class="txt" placeholder="卖价" /></td>
-    <td><input class="amt" value="0" oninput="recalc()" /></td>
-  `;
-  tbody.appendChild(tr);
-  recalc();
-}
-
-document.addEventListener('DOMContentLoaded',recalc);
-</script>
-
+<p class="p1"><span class="s1"><b>收益追踪表</b><b></b></span></p>
+<p class="p2"><span class="s2"><b>目前收益</b><b></b></span></p>
+<p class="p3"><span class="s3">自动汇总</span></p>
+<p class="p3"><span class="s4">当前累计已落袋利润</span></p>
+<p class="p4"><span class="s5"><b>已实现</b><b></b></span></p>
+<p class="p5"><span class="s4"><b>¥ 10,591.66</b><b></b></span></p>
+<p class="p6"><span class="s6"></span><br></p>
+<p class="p7"><span class="s7"><b>目标</b></span><span class="s3"><b> 30,000 </b></span><span class="s7"><b>元</b></span><span class="s8"><b>进度：</b><b></b></span></p>
+<p class="p8"><span class="s3"><b>35.3%</b><b></b></span></p>
+<p class="p9"><span class="s6"></span><br></p>
+<p class="p10"><span class="s9"><b>10,591.66 / 30,000</b><b></b></span></p>
+<p class="p10"><span class="s10">剩余</span><span class="s11"> </span><span class="s3"><b>19,408.34</b></span><span class="s11"> </span><span class="s10">元</span></p>
+<p class="p6"><span class="s6"></span><br></p>
+<p class="p7"><span class="s7"><b>目标</b></span><span class="s3"><b> 35,000 </b></span><span class="s7"><b>元</b></span><span class="s8"><b>进度：</b><b></b></span></p>
+<p class="p11"><span class="s3"><b>30.3%</b><b></b></span></p>
+<p class="p9"><span class="s6"></span><br></p>
+<p class="p10"><span class="s9"><b>10,591.66 / 35,000</b><b></b></span></p>
+<p class="p10"><span class="s10">剩余</span><span class="s11"> </span><span class="s3"><b>24,408.34</b></span><span class="s11"> </span><span class="s10">元</span></p>
+<p class="p6"><span class="s6"></span><br></p>
+<p class="p2"><span class="s2"><b>成交记录</b><b></b></span></p>
+<p class="p3"><span class="s3">卖出后填写</span></p>
+<table cellspacing="0" cellpadding="0" class="t1">
+  <tbody>
+    <tr>
+      <td valign="middle" class="td1">
+        <p class="p12"><span class="s12"><b>标的</b><b></b></span></p>
+      </td>
+      <td valign="middle" class="td2">
+        <p class="p12"><span class="s12"><b>成交日</b><b></b></span></p>
+      </td>
+      <td valign="middle" class="td2">
+        <p class="p13"><span class="s12"><b>卖价</b></span><span class="s3"><b>(¥)</b><b></b></span></p>
+      </td>
+      <td valign="middle" class="td2">
+        <p class="p14"><span class="s3"><b>利润</b></span><span class="s13"><b>(</b></span><span class="s3"><b>元</b></span><span class="s13"><b>)</b><b></b></span></p>
+      </td>
+    </tr>
+    <tr>
+      <td colspan="4" valign="middle" class="td3">
+        <p class="p15"><span class="s14"><b>已完成</b><b></b></span></p>
+      </td>
+    </tr>
+    <tr>
+      <td valign="middle" class="td4">
+        <p class="p16"><span class="s15">纳指</span><span class="s6">ETF</span></p>
+      </td>
+      <td valign="middle" class="td5">
+        <p class="p17"><span class="s6"></span><br></p>
+      </td>
+      <td valign="middle" class="td5">
+        <p class="p17"><span class="s6"></span><br></p>
+      </td>
+      <td valign="middle" class="td5">
+        <p class="p16"><span class="s16">1847.30</span></p>
+      </td>
+    </tr>
+    <tr>
+      <td valign="middle" class="td4">
+        <p class="p18"><span class="s6">华银电力</span></p>
+      </td>
+      <td valign="middle" class="td5">
+        <p class="p17"><span class="s6"></span><br></p>
+      </td>
+      <td valign="middle" class="td5">
+        <p class="p17"><span class="s6"></span><br></p>
+      </td>
+      <td valign="middle" class="td5">
+        <p class="p16"><span class="s16">1225.61</span></p>
+      </td>
+    </tr>
+    <tr>
+      <td valign="middle" class="td4">
+        <p class="p18"><span class="s6">北方稀土</span></p>
+      </td>
+      <td valign="middle" class="td5">
+        <p class="p17"><span class="s6"></span><br></p>
+      </td>
+      <td valign="middle" class="td5">
+        <p class="p17"><span class="s6"></span><br></p>
+      </td>
+      <td valign="middle" class="td5">
+        <p class="p16"><span class="s16">186.15</span></p>
+      </td>
+    </tr>
+    <tr>
+      <td valign="middle" class="td4">
+        <p class="p18"><span class="s6">农业银行</span></p>
+      </td>
+      <td valign="middle" class="td5">
+        <p class="p17"><span class="s6"></span><br></p>
+      </td>
+      <td valign="middle" class="td5">
+        <p class="p17"><span class="s6"></span><br></p>
+      </td>
+      <td valign="middle" class="td5">
+        <p class="p16"><span class="s16">359.24</span></p>
+      </td>
+    </tr>
+    <tr>
+      <td valign="middle" class="td4">
+        <p class="p16"><span class="s15">人工智能</span><span class="s6">AI50ETF</span></p>
+      </td>
+      <td valign="middle" class="td5">
+        <p class="p17"><span class="s6"></span><br></p>
+      </td>
+      <td valign="middle" class="td5">
+        <p class="p17"><span class="s6"></span><br></p>
+      </td>
+      <td valign="middle" class="td5">
+        <p class="p16"><span class="s16">444.00</span></p>
+      </td>
+    </tr>
+    <tr>
+      <td valign="middle" class="td4">
+        <p class="p16"><span class="s15">创业板</span><span class="s6">ETF</span></p>
+      </td>
+      <td valign="middle" class="td5">
+        <p class="p17"><span class="s6"></span><br></p>
+      </td>
+      <td valign="middle" class="td5">
+        <p class="p17"><span class="s6"></span><br></p>
+      </td>
+      <td valign="middle" class="td5">
+        <p class="p16"><span class="s16">1114.52</span></p>
+      </td>
+    </tr>
+    <tr>
+      <td colspan="4" valign="middle" class="td3">
+        <p class="p15"><span class="s14"><b>本轮</b><b></b></span></p>
+      </td>
+    </tr>
+    <tr>
+      <td valign="middle" class="td4">
+        <p class="p18"><span class="s17">AI</span><span class="s6">主题</span><span class="s17">ETF </span><span class="s6">第一档卖出</span></p>
+      </td>
+      <td valign="middle" class="td5">
+        <p class="p16"><span class="s6">2025-10-27</span></p>
+      </td>
+      <td valign="middle" class="td5">
+        <p class="p16"><span class="s6">1.995</span></p>
+      </td>
+      <td valign="middle" class="td5">
+        <p class="p16"><span class="s16">900.00</span></p>
+      </td>
+    </tr>
+    <tr>
+      <td valign="middle" class="td4">
+        <p class="p18"><span class="s6">电子</span><span class="s17">ETF </span><span class="s6">第一档卖出</span></p>
+      </td>
+      <td valign="middle" class="td5">
+        <p class="p16"><span class="s6">2025-10-27</span></p>
+      </td>
+      <td valign="middle" class="td5">
+        <p class="p16"><span class="s6">1.740</span></p>
+      </td>
+      <td valign="middle" class="td5">
+        <p class="p16"><span class="s16">1131.00</span></p>
+      </td>
+    </tr>
+    <tr>
+      <td valign="middle" class="td4">
+        <p class="p16"><span class="s15">沪深</span><span class="s6">300ETF </span><span class="s15">第一档卖出</span></p>
+      </td>
+      <td valign="middle" class="td5">
+        <p class="p16"><span class="s6">2025-10-27</span></p>
+      </td>
+      <td valign="middle" class="td5">
+        <p class="p16"><span class="s6">4.830</span></p>
+      </td>
+      <td valign="middle" class="td5">
+        <p class="p16"><span class="s16">708.90</span></p>
+      </td>
+    </tr>
+    <tr>
+      <td valign="middle" class="td4">
+        <p class="p17"><span class="s6"></span><br></p>
+      </td>
+      <td valign="middle" class="td5">
+        <p class="p17"><span class="s6"></span><br></p>
+      </td>
+      <td valign="middle" class="td5">
+        <p class="p17"><span class="s6"></span><br></p>
+      </td>
+      <td valign="middle" class="td5">
+        <p class="p16"><span class="s16">0</span></p>
+      </td>
+    </tr>
+  </tbody>
+</table>
+<p class="p19"><span class="s18">＋</span><span class="s19"> </span><span class="s18">新增一笔</span></p>
+<p class="p3"><span class="s3">新增一笔后，填成交日、卖价、利润。</span></p>
+<p class="p20"><span class="s3">万七的佣金可以用优惠券吗？</span></p>
+<p class="p20"><span class="s20"><i>——</i></span><span class="s3">某知名教练</span></p>
 </body>
 </html>
